@@ -9,8 +9,7 @@ Represents an enumeration using a widget.
 from collections import OrderedDict
 from threading import Lock
 
-from .domwidget import DOMWidget
-from .widget import register
+from .widget import DOMWidget, register
 from traitlets import (
     Unicode, Bool, Any, Dict, TraitError, CaselessStrEnum, Tuple, List
 )
@@ -31,7 +30,7 @@ class _Selection(DOMWidget):
     """
 
     value = Any(help="Selected value")
-    selected_label = Unicode(help="The label of the selected value").tag(sync=True)
+    selected_label = Unicode(help="The label of the selected value", sync=True)
     options = Any(help="""List of (key, value) tuples or dict of values that the
         user can select.
 
@@ -42,11 +41,11 @@ class _Selection(DOMWidget):
     """)
 
     _options_dict = Dict()
-    _options_labels = Tuple().tag(sync=True)
+    _options_labels = Tuple(sync=True)
     _options_values = Tuple()
 
-    disabled = Bool(False, help="Enable or disable user changes").tag(sync=True)
-    description = Unicode(help="Description of the value this widget represents").tag(sync=True)
+    disabled = Bool(False, help="Enable or disable user changes", sync=True)
+    description = Unicode(help="Description of the value this widget represents", sync=True)
 
     def __init__(self, *args, **kwargs):
         self.value_lock = Lock()
@@ -65,7 +64,11 @@ class _Selection(DOMWidget):
 
         # Make sure x is a list or tuple.
         if not isinstance(x, (list, tuple)):
-            raise ValueError('x')
+            msg = (
+                "Attempted to set options for '{}' widget with an object of type `{}`\n"
+                "Expected a list, tuple or OrderdDict."
+            )
+            raise ValueError(msg.format(self.__class__.__name__, type(x)))
 
         # If x is an ordinary list, use the option values as names.
         for y in x:
@@ -140,7 +143,8 @@ class _MultipleSelection(_Selection):
     """
 
     value = Tuple(help="Selected values")
-    selected_labels = Tuple(help="The labels of the selected options").tag(sync=True)
+    selected_labels = Tuple(help="The labels of the selected options",
+                            sync=True)
 
     @property
     def selected_label(self):
@@ -184,74 +188,47 @@ class _MultipleSelection(_Selection):
                 self.value_lock.release()
 
 
-@register('Jupyter.ToggleButtons')
+@register('IPython.ToggleButtons')
 class ToggleButtons(_Selection):
-    """Group of toggle buttons that represent an enumeration.
-
-    Only one toggle button can be toggled at any point in time.
-    """
-    _view_name = Unicode('ToggleButtonsView').tag(sync=True)
-    _model_name = Unicode('ToggleButtonsModel').tag(sync=True)
-
-    tooltips = List(Unicode()).tag(sync=True)
-    icons = List(Unicode()).tag(sync=True)
+    """Group of toggle buttons that represent an enumeration.  Only one toggle
+    button can be toggled at any point in time."""
+    _view_name = Unicode('ToggleButtonsView', sync=True)
+    tooltips = List(Unicode(), sync=True)
+    icons = List(Unicode(), sync=True)
 
     button_style = CaselessStrEnum(
         values=['primary', 'success', 'info', 'warning', 'danger', ''],
-        default_value='', allow_none=True, help="""Use a predefined styling for
-        the buttons.""").tag(sync=True)
+        default_value='', allow_none=True, sync=True, help="""Use a
+        predefined styling for the buttons.""")
 
-
-@register('Jupyter.Dropdown')
+@register('IPython.Dropdown')
 class Dropdown(_Selection):
     """Allows you to select a single item from a dropdown."""
-    _view_name = Unicode('DropdownView').tag(sync=True)
-    _model_name = Unicode('DropdownModel').tag(sync=True)
+    _view_name = Unicode('DropdownView', sync=True)
 
     button_style = CaselessStrEnum(
         values=['primary', 'success', 'info', 'warning', 'danger', ''],
-        default_value='', allow_none=True, help="""Use a predefined styling for
-        the buttons.""").tag(sync=True)
+        default_value='', allow_none=True, sync=True, help="""Use a
+        predefined styling for the buttons.""")
 
-
-@register('Jupyter.RadioButtons')
+@register('IPython.RadioButtons')
 class RadioButtons(_Selection):
-    """Group of radio buttons that represent an enumeration.
-
-    Only one radio button can be toggled at any point in time.
-    """
-    _view_name = Unicode('RadioButtonsView').tag(sync=True)
-    _modelname = Unicode('RadioButtonsModel').tag(sync=True)
+    """Group of radio buttons that represent an enumeration.  Only one radio
+    button can be toggled at any point in time."""
+    _view_name = Unicode('RadioButtonsView', sync=True)
 
 
-@register('Jupyter.Select')
+
+@register('IPython.Select')
 class Select(_Selection):
     """Listbox that only allows one item to be selected at any given time."""
-    _view_name = Unicode('SelectView').tag(sync=True)
-    _model_name = Unicode('SelectModel').tag(sync=True)
+    _view_name = Unicode('SelectView', sync=True)
 
 
-@register('Jupyter.SelectionSlider')
-class SelectionSlider(_Selection):
-    """Slider to select a single item from a list or dictionary."""
-    _view_name = Unicode('SelectionSliderView', sync=True)
-    _modelname = Unicode('SelectionSliderModel', sync=True)
-
-    orientation = CaselessStrEnum(
-        values=['horizontal', 'vertical'],
-        default_value='horizontal', allow_none=False, sync=True,
-        help="""Vertical or horizontal.""")
-    readout = Bool(True, sync=True,
-        help="""Display the current selected label next to the slider""")
-
-
-@register('Jupyter.SelectMultiple')
+@register('IPython.SelectMultiple')
 class SelectMultiple(_MultipleSelection):
     """Listbox that allows many items to be selected at any given time.
-
     Despite their names, inherited from ``_Selection``, the currently chosen
     option values, ``value``, or their labels, ``selected_labels`` must both be
-    updated with a list-like object.
-    """
-    _view_name = Unicode('SelectMultipleView').tag(sync=True)
-    _model_name = Unicode('SelectMultipleModel').tag(sync=True)
+    updated with a list-like object."""
+    _view_name = Unicode('SelectMultipleView', sync=True)
